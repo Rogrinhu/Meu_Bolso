@@ -132,4 +132,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ---
 
-*Desenvolvido por [Rogrinhu](https://github.com/Rogrinhu) e [Afonso](https://github.com/codebyafonso)*
+*Desenvolvido por [Thiago](https://github.com/Rogrinhu) e [Afonso](https://github.com/codebyafonso)*
