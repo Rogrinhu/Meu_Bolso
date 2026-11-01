@@ -1,6 +1,5 @@
 {
   "appId": "br.meubolso.app",
   "appName": "Meu Bolso",
-  "webDir": "www",
-  "backgroundColor": "#EFF3F5"
+  "webDir": "www"
 }

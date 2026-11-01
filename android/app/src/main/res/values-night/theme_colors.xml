@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mesma cor de fundo (bg) do HTML no modo escuro -->
+    <color name="app_bg">#0D1418</color>
+    <bool name="light_bars">false</bool>
+</resources>
