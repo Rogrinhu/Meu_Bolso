@@ -203,6 +203,40 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   @keyframes up{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
 }
 @media (max-width:380px){.row2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.big{font-size:30px}}
+
+/* abas (5) */
+.tabbar-in{grid-template-columns:repeat(5,1fr)}
+.tab{font-size:11px;padding-inline:2px}
+/* valores e marcações */
+.pos{color:var(--accent)}
+.bad{color:var(--crit)}
+.bigval{font-family:var(--font-display);font-size:24px;font-weight:700;min-height:54px}
+.pill{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.03em;vertical-align:2px;background:var(--surface-2);color:var(--muted)}
+.pill.need{background:var(--info-soft);color:var(--info)}
+.pill.want{background:var(--warn-soft);color:var(--warn)}
+.item .acts{grid-column:2;display:flex;gap:14px;justify-content:flex-end;flex-wrap:wrap}
+.danger-link{color:var(--crit)}
+.due-soon{color:var(--crit);font-weight:600}
+.delta{font-size:12px;font-weight:600}
+.delta.up{color:var(--crit)}
+.delta.down{color:var(--accent)}
+.check{display:flex;gap:10px;align-items:center;min-height:40px;font-size:14px;font-weight:500}
+.check input{width:20px;height:20px;flex:none;accent-color:var(--accent)}
+.stack{display:flex;flex-direction:column;gap:10px}
+/* necessidade x desejo */
+.nw{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.nw-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--surface-2)}
+.nw-bar i{display:block;height:100%}
+.nw-bar .need,.dot.need{background:var(--info)}
+.nw-bar .want,.dot.want{background:var(--warn-fill)}
+.dot.need,.dot.want{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:0}
+/* lista de espera e faturas */
+.wish{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.wish:first-of-type{border-top:0;padding-top:0}
+.saved{padding:12px 14px;border-radius:12px;background:var(--accent-soft);margin-bottom:10px}
+.invstate{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;margin:6px 0 4px;border-radius:12px;background:var(--warn-soft);color:var(--warn);font-weight:600;font-size:14px}
+.invstate.paid{background:var(--accent-soft);color:var(--accent)}
+@media (max-width:360px){.tab{font-size:10px}}
 </style>
 
 </head>
@@ -225,510 +259,25 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
       Lançar
     </button>
+    <button class="tab" data-tab="income" data-act="tab">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
+      Entradas
+    </button>
     <button class="tab" data-tab="cards" data-act="tab">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
       Cartões
     </button>
+    <button class="tab" data-tab="more" data-act="tab">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+      Mais
+    </button>
   </div>
 </nav>
+<input type="file" id="imp-file" accept=".json,application/json,text/plain" hidden>
 <div id="overlay" hidden></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script>
-// <logic>
-var THRESH=[50,70,85,95,100,120];
-var MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-var MES3=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-function pad(n){return String(n).padStart(2,'0')}
-function addMonths(key,k){var p=key.split('-').map(Number);var t=p[0]*12+(p[1]-1)+k;return Math.floor(t/12)+'-'+pad(t%12+1)}
-function monthDiff(a,b){var x=a.split('-').map(Number),y=b.split('-').map(Number);return (y[0]*12+y[1])-(x[0]*12+x[1])}
-function monthsRange(a,b){var out=[],n=monthDiff(a,b);for(var i=0;i<=n;i++)out.push(addMonths(a,i));return out}
-function daysInMonth(key){var p=key.split('-').map(Number);return new Date(p[0],p[1],0).getDate()}
-function fmt(cents){return (cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
-function compact(cents){var v=cents/100;if(v>=1000)return (v/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mil';return String(Math.round(v))}
-function parseMoney(s){
-  s=String(s||'').replace(/[R$\s]/g,'');
-  if(!s)return NaN;
-  if(s.indexOf(',')>=0)s=s.replace(/\./g,'').replace(',','.');
-  else if(/^\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
-  if(!/^\d+(\.\d{1,2})?$/.test(s))return NaN;
-  return Math.round(parseFloat(s)*100);
-}
-function firstMonth(p,card){
-  var k=p.date.slice(0,7);
-  if(card&&card.closeDay){var day=+p.date.slice(8,10);if(day>card.closeDay)k=addMonths(k,1)}
-  return k;
-}
-function chargesOf(p,card){
-  var n=card?Math.max(1,p.n|0):1;
-  var base=Math.floor(p.total/n),rem=p.total-base*n,start=firstMonth(p,card),out=[];
-  for(var i=0;i<n;i++)out.push({pid:p.id,month:addMonths(start,i),value:base+(i<rem?1:0),idx:i+1,n:n});
-  return out;
-}
-function allCharges(st){
-  var m={};st.cards.forEach(function(c){m[c.id]=c});
-  var out=[];
-  st.purchases.forEach(function(p){
-    var card=p.method==='cash'?null:(m[p.method]||null);
-    chargesOf(p,card).forEach(function(c){c.p=p;c.card=card;out.push(c)});
-  });
-  return out;
-}
-function spentOf(chs,key){return chs.reduce(function(s,c){return c.month===key?s+c.value:s},0)}
-function levelOf(spent,cap){return cap>0?THRESH.filter(function(t){return spent*100>=t*cap}).length:0}
-function pctNum(spent,cap){return cap>0?spent/cap*100:0}
-function alertsFor(spent,cap,daysLeft){
-  if(!(cap>0))return [];
-  var rest=cap-spent,per=(rest>0&&daysLeft)?' Isso dá '+fmt(Math.floor(rest/daysLeft))+' por dia até o fim do mês.':'';
-  var defs=[
-    [50,'info','Metade do teto','Você passou de 50% do teto do mês. É um bom momento para olhar o que ainda vem pela frente.'],
-    [70,'warn','70% usados','Sobrou menos de um terço do teto. Adie o que não for urgente.'],
-    [85,'warn','Faixa de atenção',rest>0?'Restam '+fmt(rest)+'.'+per:'Você já passou desta faixa.'],
-    [95,'crit','Quase no teto',rest>0?'Faltam só '+fmt(rest)+'. Compre apenas o essencial.':'Você já passou desta faixa. Compre apenas o essencial.'],
-    [100,'crit','Teto atingido',rest===0?'Você usou exatamente o teto. Qualquer compra nova passa dele.':'Você passou do teto em '+fmt(-rest)+'.'],
-    [120,'crit','20% acima do teto','Revise as parcelas dos próximos meses antes de assumir outra compra.']
-  ];
-  return defs.filter(function(d){return spent*100>=d[0]*cap}).map(function(d){return {t:d[0],sev:d[1],title:d[2],text:d[3]}});
-}
-function niceMax(cents){
-  var v=Math.max(cents/100,1),pow=Math.pow(10,Math.floor(Math.log10(v))),c=[1,1.5,2,3,4,5,6,8,10];
-  for(var i=0;i<c.length;i++){if(c[i]*pow>=v)return Math.round(c[i]*pow*100)}
-  return Math.round(10*pow*100);
-}
-// </logic>
-
-var LS='meu-bolso-v1';
-var CATS=['Mercado','Alimentação','Transporte','Lazer','Compras','Assinaturas','Saúde','Casa','Dívida','Outros'];
-var COLORS=['#0A6B63','#2F5BD8','#B4442A','#8A6A12','#3E4A56'];
-var $=function(s,r){return (r||document).querySelector(s)};
-var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
-var uid=function(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4)};
-var cap1=function(s){return s.charAt(0).toUpperCase()+s.slice(1)};
-function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
-function todayKey(){return todayStr().slice(0,7)}
-function mLong(key){var p=key.split('-');return MES[+p[1]-1]+' de '+p[0]}
-function mShort(key){var p=key.split('-');return MES3[+p[1]-1]+'/'+p[0]}
-function dm(ds){return ds.slice(8,10)+'/'+ds.slice(5,7)}
-
-/* ---------- estado ---------- */
-function blankState(){return {version:1,example:false,cap:0,cards:[],purchases:[]}}
-function sampleState(){
-  var cm=todayKey(),td=+todayStr().slice(8,10);
-  var inM=function(off,day){var k=addMonths(cm,off);return k+'-'+pad(off===0?Math.min(day,td):day)};
-  var a='c-azul',v='c-verde';
-  return {version:1,example:true,cap:350000,
-    cards:[{id:a,name:'Cartão Azul',limit:400000,closeDay:25,color:COLORS[1]},{id:v,name:'Cartão Verde',limit:250000,closeDay:5,color:COLORS[0]}],
-    purchases:[
-      {id:'p1',desc:'Aluguel',total:120000,date:inM(0,1),cat:'Casa',method:'cash',n:1},
-      {id:'p2',desc:'Mercado do mês',total:38640,date:inM(0,1),cat:'Mercado',method:'cash',n:1},
-      {id:'p3',desc:'Farmácia',total:9650,date:inM(0,1),cat:'Saúde',method:'cash',n:1},
-      {id:'p4',desc:'Celular novo',total:180000,date:inM(-2,14),cat:'Compras',method:a,n:10},
-      {id:'p5',desc:'Notebook',total:360000,date:inM(-1,10),cat:'Compras',method:a,n:12},
-      {id:'p6',desc:'Tênis de corrida',total:35990,date:inM(-1,12),cat:'Compras',method:v,n:3},
-      {id:'p7',desc:'Assinaturas de streaming',total:5990,date:inM(0,1),cat:'Assinaturas',method:v,n:1},
-      {id:'p8',desc:'Jantar de aniversário',total:14200,date:inM(0,1),cat:'Alimentação',method:a,n:1}
-    ]};
-}
-function validState(s){return s&&Array.isArray(s.cards)&&Array.isArray(s.purchases)&&typeof s.cap==='number'}
-function loadLocal(){try{var j=localStorage.getItem(LS);var s=j?JSON.parse(j):null;return validState(s)?s:null}catch(e){return null}}
-function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
-
-var state=loadLocal()||sampleState();
-var ui={tab:'home',homeMonth:todayKey(),capEdit:false,cardId:null,cardMonth:null,cardForm:null,confirm:null};
-var draft=null,cache=null,lastAdded=null;
-var store={ref:null,msg:'',err:false};
-var chs=function(){return cache||(cache=allCharges(state))};
-var cardById=function(id){return state.cards.find(function(c){return c.id===id})};
-var blankDraft=function(){return {desc:'',val:'',date:todayStr(),cat:'Outros',method:'cash',n:1}};
-draft=blankDraft();
-
-/* ---------- gravação ---------- */
-var saveTimer=null,saving=false,dirty=false;
-function setStatus(msg,err){store.msg=msg;store.err=!!err;var el=$('#status');if(el){el.textContent=msg;el.className='status'+(err?' err':'')}}
-function persist(){
-  cache=null;saveLocal();
-  if(!store.ref)return;
-  dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(flush,500);
-}
-async function flush(){
-  if(saving){saveTimer=setTimeout(flush,300);return}
-  if(!dirty)return;
-  dirty=false;saving=true;
-  try{await store.ref.set({json:JSON.stringify(state),updated:Date.now()});setStatus('Salvo na sua conta')}
-  catch(e){setStatus('Não deu para salvar na conta. A cópia do aparelho foi mantida.',true)}
-  saving=false;
-  if(dirty)flush();
-}
-async function initStore(){
-  try{
-    if(!window.claude||!window.claude.use){setStatus('Salvo neste aparelho');return}
-    var r=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
-    var db=r[0],user=r[1];
-    if(!db||!user){setStatus('Salvo neste aparelho');return}
-    var id=await user.id();
-    if(!id){setStatus('Salvo neste aparelho');return}
-    var ref=db.collection('data/users/'+id).doc('financas');
-    var snap=await Promise.race([ref.get(),new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},10000)})]);
-    store.ref=ref;
-    if(snap.exists){
-      var d=snap.data(),s=null;
-      try{s=JSON.parse(d.json)}catch(e){}
-      if(validState(s)){state=s;cache=null;saveLocal();render()}
-    }else if(!state.example){persist()}
-    setStatus('Salvo na sua conta');
-  }catch(e){setStatus('Salvo neste aparelho')}
-}
-
-/* ---------- utilidades de tela ---------- */
-function toast(msg){
-  var t=$('#toast');t.textContent=msg;t.hidden=false;
-  clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},2600);
-}
-function levelClass(l){return 'l'+l}
-function daysLeftIn(key){return key===todayKey()?daysInMonth(key)-(+todayStr().slice(8,10))+1:null}
-function alertsHTML(list,newFrom){
-  return '<ul class="alerts">'+list.map(function(a){
-    return '<li class="alert '+a.sev+'"><span class="tag num">'+a.t+'%</span><div><b>'+esc(a.title)+(newFrom!=null&&a.t>newFrom?'<span class="novo">novo</span>':'')+'</b><p>'+esc(a.text)+'</p></div></li>';
-  }).join('')+'</ul>';
-}
-function capFormHTML(){
-  return '<form id="f-cap" class="form" novalidate>'+
-    '<div class="field"><label for="c-cap">Quanto você pode gastar por mês, no total?</label>'+
-    '<input class="input num" id="c-cap" name="cap" inputmode="decimal" placeholder="Ex.: 3.500,00" value="'+(state.cap?esc((state.cap/100).toFixed(2).replace('.',',')):'')+'" autocomplete="off"></div>'+
-    '<p class="hint">Entram todos os gastos do mês: à vista e as parcelas que caem nele.</p>'+
-    '<div id="cap-err" class="err" role="alert"></div>'+
-    '<div class="dialog-actions"><button class="btn primary" type="submit">Salvar teto</button>'+(state.cap?'<button class="btn" type="button" data-act="cap-cancel">Cancelar</button>':'')+'</div></form>';
-}
-function chargeRow(c,showMethod){
-  var meta=[c.p.cat,dm(c.p.date)];
-  if(showMethod)meta.push(c.card?c.card.name:'À vista');
-  if(c.n>1)meta.push('parcela '+c.idx+'/'+c.n);
-  var del=ui.confirm===c.p.id;
-  return '<li class="item"><span class="t">'+esc(c.p.desc)+'</span><span class="val num">'+fmt(c.value)+'</span>'+
-    '<span class="m">'+esc(meta.join(' · '))+'</span>'+
-    '<span class="act"><button class="linkbtn small" data-act="del" data-id="'+esc(c.p.id)+'">'+(del?(c.n>1?'Confirmar: apagar todas as '+c.n+' parcelas':'Confirmar exclusão'):'Excluir')+'</button></span></li>';
-}
-
-/* ---------- início ---------- */
-function homeHTML(){
-  var key=ui.homeMonth,isCur=key===todayKey(),cap=state.cap;
-  var all=chs(),inMonth=all.filter(function(c){return c.month===key});
-  var spent=inMonth.reduce(function(s,c){return s+c.value},0);
-  var lvl=levelOf(spent,cap),pct=pctNum(spent,cap),rest=cap-spent;
-  var dl=daysLeftIn(key),alerts=alertsFor(spent,cap,dl);
-  var out='';
-  if(state.example){
-    out+='<div class="banner"><span>Você está vendo <b>dados de exemplo</b>. Apague para usar os seus.</span><button class="btn sm primary" data-act="clear-example">Começar com meus dados</button></div>';
-  }
-  out+='<div class="monthnav"><button class="iconbtn" data-act="home-prev" aria-label="Mês anterior">‹</button><h2>'+esc(cap1(mLong(key)))+'</h2><button class="iconbtn" data-act="home-next" aria-label="Próximo mês">›</button></div>';
-  if(!isCur)out+='<div style="text-align:center;margin-top:-6px"><button class="linkbtn small" data-act="home-today">Voltar para o mês atual</button></div>';
-  if(!(cap>0)){
-    out+='<section class="panel"><h2 style="margin-bottom:10px">Defina seu teto mensal</h2>'+capFormHTML()+'</section>';
-  }else{
-    var fillW=Math.min(pct,120)/120*100;
-    var ticks=THRESH.slice(0,5).map(function(t){return '<i class="tick'+(t===100?' cap':'')+'" style="left:'+(t/120*100)+'%"></i>'}).join('');
-    var labels=[[50,''],[70,''],[85,''],[100,'capl'],[120,'end']].map(function(x){return '<span class="'+x[1]+'" style="left:'+(x[0]/120*100)+'%">'+(x[0]===100?'teto':x[0]+'%')+'</span>'}).join('');
-    var next=addMonths(key,1),nextSpent=spentOf(all,next);
-    var stat2=dl?'<div class="stat"><div class="v num">'+(rest>0?fmt(Math.floor(rest/dl)):'—')+'</div><div class="k">por dia até o fim do mês ('+dl+(dl===1?' dia':' dias')+')</div></div>':
-      '<div class="stat"><div class="v num">'+inMonth.length+'</div><div class="k">'+(inMonth.length===1?'lançamento':'lançamentos')+' no mês</div></div>';
-    out+='<section class="panel gauge" aria-label="Termômetro do teto">'+
-      '<div class="gauge-head"><div><div class="eyebrow">Gasto em '+esc(MES[+key.slice(5,7)-1])+'</div><div class="big num">'+fmt(spent)+'</div></div>'+
-      '<div class="pctbadge num '+levelClass(lvl)+'">'+Math.floor(pct)+'%</div></div>'+
-      '<div class="track" role="img" aria-label="'+Math.floor(pct)+'% do teto usado"><div class="fill '+levelClass(lvl)+'" style="width:'+fillW+'%"></div>'+ticks+'</div>'+
-      '<div class="scale" aria-hidden="true">'+labels+'</div>'+
-      '<div class="stats">'+
-        '<div class="stat"><div class="v num'+(rest<0?' bad':'')+'">'+(rest<0?'−'+fmt(-rest):fmt(rest))+'</div><div class="k">'+(rest<0?'acima do teto':'ainda disponível')+'</div></div>'+
-        stat2+
-        '<div class="stat"><div class="v num">'+fmt(nextSpent)+'</div><div class="k">já previsto em '+esc(mShort(next))+'</div></div>'+
-      '</div>'+
-      (ui.capEdit?'<div class="capline" style="display:block">'+capFormHTML()+'</div>':
-      '<div class="capline"><span class="small muted">Teto mensal <b class="num" style="color:var(--ink)">'+fmt(cap)+'</b></span><button class="linkbtn small" data-act="cap-edit">Alterar teto</button></div>')+
-      '</section>';
-    out+='<section class="panel"><div class="panel-head"><h2>Avisos</h2><span class="small muted num">'+alerts.length+' de '+THRESH.length+'</span></div>'+
-      (alerts.length?alertsHTML(alerts):'<p class="hint">Nenhum aviso agora. Eles começam quando o mês chega a 50% do teto e aumentam a cada faixa: 70%, 85%, 95%, 100% e 120%.</p>')+'</section>';
-  }
-  /* forma de pagamento */
-  if(inMonth.length){
-    var groups={};
-    inMonth.forEach(function(c){var k=c.card?c.card.id:'cash';groups[k]=(groups[k]||0)+c.value});
-    var rows=Object.keys(groups).sort(function(a,b){return groups[b]-groups[a]}).map(function(k){
-      var nm=k==='cash'?'À vista (Pix, débito, dinheiro)':(cardById(k)||{name:'Cartão'}).name;
-      var w=spent?groups[k]/spent*100:0;
-      return '<div class="split-row"><div class="top2"><span>'+esc(nm)+'</span><span class="num">'+fmt(groups[k])+'</span></div><div class="bar"><i style="width:'+w+'%"></i></div></div>';
-    }).join('');
-    out+='<section class="panel"><div class="panel-head"><h2>Por forma de pagamento</h2></div><div class="split">'+rows+'</div></section>';
-    var sorted=inMonth.slice().sort(function(a,b){return a.p.date<b.p.date?1:a.p.date>b.p.date?-1:0});
-    out+='<section class="panel"><div class="panel-head"><h2>Lançamentos do mês</h2><span class="small muted num">'+fmt(spent)+'</span></div><ul class="list">'+sorted.map(function(c){return chargeRow(c,true)}).join('')+'</ul></section>';
-  }else{
-    out+='<section class="panel"><p class="empty">Nada lançado em '+esc(mLong(key))+'.<br><button class="linkbtn" data-act="goto-add">Lançar uma compra</button></p></section>';
-  }
-  return out;
-}
-
-/* ---------- lançar ---------- */
-function addHTML(){
-  var d=draft;
-  var chips='<label class="chip"><input type="radio" name="method" value="cash"'+(d.method==='cash'?' checked':'')+'><span>À vista</span></label>'+
-    state.cards.map(function(c){return '<label class="chip"><input type="radio" name="method" value="'+esc(c.id)+'"'+(d.method===c.id?' checked':'')+'><span><i class="dot" style="background:'+esc(c.color)+'"></i>'+esc(c.name)+'</span></label>'}).join('');
-  var nOpts='';for(var i=1;i<=24;i++)nOpts+='<option value="'+i+'"'+(d.n===i?' selected':'')+'>'+i+'x</option>';
-  var cats=CATS.map(function(c){return '<option'+(d.cat===c?' selected':'')+'>'+esc(c)+'</option>'}).join('');
-  return '<section class="panel"><h2 style="margin-bottom:12px">Nova compra ou dívida</h2>'+
-    '<form id="f-add" class="form" novalidate>'+
-    '<div class="field"><label for="a-desc">O que foi?</label><input class="input" id="a-desc" name="desc" maxlength="80" placeholder="Ex.: Tênis, conta de luz, parcela do carro" value="'+esc(d.desc)+'" autocomplete="off"></div>'+
-    '<div class="field"><label for="a-val">Valor total</label><input class="input num" id="a-val" name="val" inputmode="decimal" placeholder="0,00" value="'+esc(d.val)+'" autocomplete="off"></div>'+
-    '<div class="row2"><div class="field"><label for="a-date">Data da compra</label><input class="input" type="date" id="a-date" name="date" value="'+esc(d.date)+'"></div>'+
-    '<div class="field"><label for="a-cat">Categoria</label><select class="input" id="a-cat" name="cat">'+cats+'</select></div></div>'+
-    '<fieldset><div class="legend">Como foi pago</div><div class="chips">'+chips+'</div>'+
-    (state.cards.length?'':'<p class="hint" style="margin-top:8px">Quer lançar no cartão? Cadastre seus cartões na aba Cartões.</p>')+'</fieldset>'+
-    '<div class="field" id="a-inst" '+(d.method==='cash'?'hidden':'')+'><label for="a-n">Em quantas vezes?</label><select class="input" id="a-n" name="n">'+nOpts+'</select><p class="hint num" id="a-inst-note"></p></div>'+
-    '<div class="preview" id="a-prev" aria-live="polite"></div>'+
-    '<div id="a-err" class="err" role="alert"></div>'+
-    '<button class="btn primary block" type="submit">Adicionar lançamento</button></form></section>';
-}
-function readAdd(){
-  var f=$('#f-add');if(!f)return;
-  var m=f.querySelector('input[name=method]:checked');
-  draft={desc:f.elements.desc.value,val:f.elements.val.value,date:f.elements.date.value,cat:f.elements.cat.value,method:m?m.value:'cash',n:+f.elements.n.value||1};
-}
-function candidate(){
-  var total=parseMoney(draft.val);
-  if(!(total>0)||!/^\d{4}-\d{2}-\d{2}$/.test(draft.date))return null;
-  var p={id:'preview',desc:draft.desc,total:total,date:draft.date,cat:draft.cat,method:draft.method,n:draft.method==='cash'?1:draft.n};
-  var card=draft.method==='cash'?null:cardById(draft.method);
-  return {p:p,card:card,ch:chargesOf(p,card)};
-}
-function updateAddPreview(){
-  var inst=$('#a-inst'),prev=$('#a-prev'),note=$('#a-inst-note');
-  if(!prev)return;
-  inst.hidden=draft.method==='cash';
-  var c=candidate();
-  if(note){
-    if(c&&c.card){
-      var n=c.p.n,base=Math.floor(c.p.total/n);
-      note.textContent=n===1?'1 parcela de '+fmt(c.p.total)+' na fatura de '+mShort(c.ch[0].month):
-        n+'x de '+fmt(base)+' · de '+mShort(c.ch[0].month)+' até '+mShort(c.ch[n-1].month);
-    }else note.textContent='';
-  }
-  if(!c){prev.innerHTML='<p class="hint">Digite o valor para ver como essa compra mexe no seu teto.</p>';return}
-  var h='',all=chs(),cap=state.cap;
-  if(cap>0){
-    var f=c.ch[0],before=spentOf(all,f.month),after=before+f.value;
-    var lb=levelOf(before,cap),la=levelOf(after,cap);
-    var wA=Math.min(pctNum(before,cap),120)/120*100,wB=Math.min(pctNum(after,cap),120)/120*100-wA;
-    h+='<div class="pv-row"><span>'+esc(cap1(mShort(f.month)))+'</span><b class="num">'+Math.floor(pctNum(before,cap))+'% → '+Math.floor(pctNum(after,cap))+'% do teto</b></div>'+
-      '<div class="mini" aria-hidden="true"><i class="a" style="width:'+wA+'%"></i><i class="b" style="left:'+wA+'%;width:'+Math.max(wB,0)+'%"></i><i class="t100" style="left:'+(100/120*100)+'%"></i></div>';
-    h+=la>lb?'<div class="pv-warn">Com esta compra você passa de '+la+(la===1?' aviso':' avisos')+' neste mês (hoje são '+lb+').</div>':
-      '<div class="pv-ok">'+(la===0?'Sem avisos neste mês.':la+(la===1?' aviso':' avisos')+', sem mudança.')+'</div>';
-    var worst=null;
-    c.ch.slice(1).forEach(function(x){var a=spentOf(all,x.month)+x.value;if(levelOf(a,cap)>=4&&(!worst||a/cap>worst.r))worst={m:x.month,r:a/cap}});
-    if(worst)h+='<div class="pv-warn">Em '+esc(mShort(worst.m))+' as parcelas levam o mês a '+Math.floor(worst.r*100)+'% do teto.</div>';
-  }else h+='<p class="hint">Defina o teto mensal na aba Início para ver o impacto.</p>';
-  if(c.card){
-    var committed=all.filter(function(x){return x.card&&x.card.id===c.card.id&&x.month>=todayKey()}).reduce(function(s,x){return s+x.value},0);
-    var free=c.card.limit-committed;
-    h+=c.p.total>free?'<div class="pv-warn">Passa do limite livre do '+esc(c.card.name)+' ('+fmt(Math.max(free,0))+' livres).</div>':
-      '<div class="pv-row small muted"><span>Limite livre no '+esc(c.card.name)+'</span><span class="num">'+fmt(free)+' → '+fmt(free-c.p.total)+'</span></div>';
-  }
-  prev.innerHTML=h;
-}
-function submitAdd(){
-  readAdd();
-  var err=$('#a-err'),total=parseMoney(draft.val);
-  if(!draft.desc.trim()){err.textContent='Escreva o que foi comprado.';$('#a-desc').focus();return}
-  if(!(total>0)){err.textContent='Informe o valor total, por exemplo 129,90.';$('#a-val').focus();return}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)){err.textContent='Escolha a data da compra.';$('#a-date').focus();return}
-  var p={id:uid(),desc:draft.desc.trim(),total:total,date:draft.date,cat:draft.cat,method:draft.method,n:draft.method==='cash'?1:Math.max(1,Math.min(48,draft.n|0))};
-  var card=p.method==='cash'?null:cardById(p.method);
-  var month=chargesOf(p,card)[0].month;
-  var before=spentOf(chs(),month);
-  var lb=levelOf(before,state.cap);
-  state.purchases.push(p);persist();
-  var after=spentOf(chs(),month),la=levelOf(after,state.cap);
-  draft=blankDraft();render();
-  if(la>=1)openDialog(p.id,month,lb,la,after);
-  else toast('Lançado: '+p.desc);
-}
-function openDialog(pid,month,lb,la,spent){
-  var cap=state.cap,rest=cap-spent;
-  var list=alertsFor(spent,cap,daysLeftIn(month));
-  var cls=la>=4?'crit':la>=2?'warn':'';
-  var ov=$('#overlay');
-  ov.innerHTML='<div class="scrim"><div class="dialog '+cls+'" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t">'+
-    '<div><div class="eyebrow">'+la+(la===1?' aviso':' avisos')+' em '+esc(mShort(month))+'</div>'+
-    '<h2 id="dlg-t" style="margin-top:4px">'+Math.floor(pctNum(spent,cap))+'% do teto de '+esc(MES[+month.slice(5,7)-1])+'</h2>'+
-    '<p class="muted" style="margin-top:4px">'+(rest>=0?'Sobram '+fmt(rest)+' para este mês.':'Você está '+fmt(-rest)+' acima do teto.')+'</p></div>'+
-    alertsHTML(list,lb>0?THRESH[lb-1]:0)+
-    '<div class="dialog-actions"><button class="btn primary" data-act="dlg-ok" id="dlg-ok">Entendi</button><button class="btn danger" data-act="dlg-undo" data-id="'+esc(pid)+'">Desfazer este lançamento</button></div></div></div>';
-  ov.hidden=false;
-  $('#dlg-ok').focus();
-}
-function closeDialog(){var ov=$('#overlay');ov.hidden=true;ov.innerHTML=''}
-
-/* ---------- cartões ---------- */
-function committedOf(card){return chs().filter(function(x){return x.card&&x.card.id===card.id&&x.month>=todayKey()}).reduce(function(s,x){return s+x.value},0)}
-function cardFormHTML(card){
-  var color=card?card.color:COLORS[state.cards.length%COLORS.length];
-  return '<section class="panel"><h2 style="margin-bottom:12px">'+(card?'Editar cartão':'Novo cartão')+'</h2>'+
-    '<form id="f-card" class="form" data-id="'+(card?esc(card.id):'')+'" novalidate>'+
-    '<div class="field"><label for="k-name">Nome do cartão</label><input class="input" id="k-name" name="name" maxlength="30" placeholder="Ex.: Cartão do banco" value="'+(card?esc(card.name):'')+'" autocomplete="off"></div>'+
-    '<div class="row2"><div class="field"><label for="k-limit">Limite</label><input class="input num" id="k-limit" name="limit" inputmode="decimal" placeholder="0,00" value="'+(card?esc((card.limit/100).toFixed(2).replace('.',',')):'')+'" autocomplete="off"></div>'+
-    '<div class="field"><label for="k-close">Dia de fechamento</label><input class="input num" id="k-close" name="close" inputmode="numeric" maxlength="2" placeholder="Opcional" value="'+(card&&card.closeDay?card.closeDay:'')+'" autocomplete="off"></div></div>'+
-    '<p class="hint">Com o dia de fechamento, compras feitas depois dele entram na fatura do mês seguinte. Sem ele, a compra entra na fatura do mês em que foi feita.</p>'+
-    '<fieldset><div class="legend">Cor</div><div class="swatches">'+COLORS.map(function(c,i){return '<label class="swatch"><input type="radio" name="color" value="'+c+'" aria-label="Cor '+(i+1)+'"'+(c===color?' checked':'')+'><span style="background:'+c+'"></span></label>'}).join('')+'</div></fieldset>'+
-    '<div id="k-err" class="err" role="alert"></div>'+
-    '<div class="dialog-actions"><button class="btn primary" type="submit">Salvar cartão</button><button class="btn" type="button" data-act="card-form-cancel">Cancelar</button></div></form></section>';
-}
-function cardsHTML(){
-  var out='<div class="panel-head" style="margin:0"><h2>Meus cartões</h2>'+(ui.cardForm?'':'<button class="btn sm primary" data-act="card-new">Adicionar cartão</button>')+'</div>';
-  if(ui.cardForm==='new')out+=cardFormHTML(null);
-  if(!state.cards.length&&!ui.cardForm)out+='<section class="panel"><p class="empty">Nenhum cartão cadastrado.<br>Adicione um para lançar compras parceladas e ver a fatura de cada mês.</p></section>';
-  var cm=todayKey();
-  state.cards.forEach(function(c){
-    var com=committedOf(c),pct=c.limit>0?com/c.limit*100:0;
-    var cls=pct>100?'over':pct>=80?'hi':'';
-    var fat=spentOf(chs().filter(function(x){return x.card&&x.card.id===c.id}),cm);
-    out+='<button class="cardrow" data-act="open-card" data-id="'+esc(c.id)+'"><span class="plastic" style="background:'+esc(c.color)+'" aria-hidden="true">'+esc(c.name.charAt(0).toUpperCase())+'</span>'+
-      '<span style="min-width:0"><span class="nm">'+esc(c.name)+'</span>'+
-      '<span class="small muted num" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>Fatura de '+esc(mShort(cm))+': '+fmt(fat)+'</span><span>Limite '+fmt(c.limit)+'</span></span>'+
-      '<span class="limitbar" style="display:block"><i class="'+cls+'" style="width:'+Math.min(pct,100)+'%"></i></span>'+
-      '<span class="small muted num" style="display:block;margin-top:4px">'+fmt(com)+' comprometidos ('+Math.floor(pct)+'%)</span></span></button>';
-  });
-  return out;
-}
-function chartSVG(keys,totals,sel){
-  var slot=46,padL=44,padR=8,padT=24,padB=32,H=210,plotH=H-padT-padB,W=padL+padR+slot*keys.length;
-  var max=niceMax(Math.max.apply(null,totals.concat([1])));
-  var y=function(v){return padT+plotH-(v/max)*plotH};
-  var cm=todayKey(),s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="Fatura por mês">';
-  [0,max/2,max].forEach(function(v){
-    s+='<line class="grid" x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text class="ax" x="'+(padL-6)+'" y="'+(y(v)+3)+'" text-anchor="end">'+(v===0?'0':compact(v))+'</text>';
-  });
-  keys.forEach(function(k,i){
-    var x=padL+i*slot,v=totals[i],bh=(v/max)*plotH,cx=x+slot/2,isSel=k===sel,mo=+k.slice(5,7);
-    if(v>0)s+='<rect class="bar-r'+(isSel?' sel':'')+'" x="'+(x+9)+'" y="'+(y(v))+'" width="'+(slot-18)+'" height="'+bh+'" rx="4"/><text class="vl num" x="'+cx+'" y="'+(y(v)-5)+'" text-anchor="middle">'+compact(v)+'</text>';
-    s+='<text class="ax'+(k===cm?' cur':'')+'" x="'+cx+'" y="'+(H-17)+'" text-anchor="middle">'+MES3[mo-1]+'</text>';
-    if(i===0||mo===1)s+='<text class="ax" x="'+cx+'" y="'+(H-5)+'" text-anchor="middle">'+k.slice(0,4)+'</text>';
-    s+='<rect class="hit" data-act="pick-month" data-month="'+k+'" x="'+x+'" y="'+padT+'" width="'+slot+'" height="'+(H-padT-6)+'" tabindex="0" role="button" aria-label="'+esc(mShort(k))+': '+fmt(v)+'"'+(isSel?' aria-pressed="true"':'')+'/>';
-  });
-  return s+'</svg>';
-}
-function cardDetailHTML(){
-  var card=cardById(ui.cardId);
-  if(!card){ui.cardId=null;return cardsHTML()}
-  var cm=todayKey(),cch=chs().filter(function(c){return c.card&&c.card.id===card.id});
-  var start=addMonths(cm,-1),end=addMonths(cm,3);
-  if(cch.length){
-    var mn=cch.reduce(function(a,c){return c.month<a?c.month:a},cch[0].month),mx=cch.reduce(function(a,c){return c.month>a?c.month:a},cch[0].month);
-    if(mn<start)start=mn;if(mx>end)end=mx;
-  }
-  if(monthDiff(start,end)>35)start=addMonths(end,-35);
-  var keys=monthsRange(start,end);
-  if(!ui.cardMonth||keys.indexOf(ui.cardMonth)<0)ui.cardMonth=keys.indexOf(cm)>=0?cm:keys[0];
-  var sel=ui.cardMonth,totals=keys.map(function(k){return spentOf(cch,k)});
-  var com=committedOf(card),free=card.limit-com,pct=card.limit>0?com/card.limit*100:0;
-  var list=cch.filter(function(c){return c.month===sel}).sort(function(a,b){return a.p.date<b.p.date?1:a.p.date>b.p.date?-1:0});
-  var total=totals[keys.indexOf(sel)];
-  var delN=state.purchases.filter(function(p){return p.method===card.id}).length;
-  var out='<div class="cardhead"><button class="iconbtn" data-act="back-cards" aria-label="Voltar para os cartões">‹</button><span class="plastic" style="background:'+esc(card.color)+'" aria-hidden="true">'+esc(card.name.charAt(0).toUpperCase())+'</span><div style="min-width:0"><h2>'+esc(card.name)+'</h2><div class="small muted">'+(card.closeDay?'Fecha dia '+card.closeDay:'Sem dia de fechamento')+'</div></div></div>';
-  if(ui.cardForm===card.id)out+=cardFormHTML(card);
-  out+='<section class="panel"><div class="stats" style="margin-top:0">'+
-    '<div class="stat"><div class="v num">'+fmt(card.limit)+'</div><div class="k">limite do cartão</div></div>'+
-    '<div class="stat"><div class="v num">'+fmt(com)+'</div><div class="k">comprometido ('+Math.floor(pct)+'%)</div></div>'+
-    '<div class="stat"><div class="v num'+(free<0?' bad':'')+'">'+(free<0?'−'+fmt(-free):fmt(free))+'</div><div class="k">'+(free<0?'acima do limite':'limite livre')+'</div></div></div>'+
-    '<div class="limitbar" style="margin-top:12px"><i class="'+(pct>100?'over':pct>=80?'hi':'')+'" style="width:'+Math.min(pct,100)+'%"></i></div>'+
-    '<div class="capline"><span class="small muted">Comprometido = fatura de '+esc(mShort(cm))+' e parcelas futuras.</span>'+
-    '<span style="display:flex;gap:14px"><button class="linkbtn small" data-act="card-edit" data-id="'+esc(card.id)+'">Editar</button><button class="linkbtn small" style="color:var(--crit)" data-act="card-del" data-id="'+esc(card.id)+'">'+(ui.confirm==='card:'+card.id?'Confirmar: apagar cartão'+(delN?' e '+delN+(delN===1?' compra':' compras'):''):'Excluir')+'</button></span></div></section>';
-  out+='<section class="panel"><div class="panel-head"><h2>Gastos por mês</h2><span class="small muted">Toque numa barra</span></div><div class="chart-scroll" id="chart-scroll">'+chartSVG(keys,totals,sel)+'</div></section>';
-  var i=keys.indexOf(sel);
-  out+='<section class="panel"><div class="monthnav" style="margin-bottom:6px"><button class="iconbtn" data-act="cm-prev" aria-label="Mês anterior"'+(i<=0?' disabled':'')+'>‹</button><div style="text-align:center"><h2>'+esc(cap1(mLong(sel)))+'</h2><div class="small muted">Fatura prevista <b class="num" style="color:var(--ink)">'+fmt(total)+'</b></div></div><button class="iconbtn" data-act="cm-next" aria-label="Próximo mês"'+(i>=keys.length-1?' disabled':'')+'>›</button></div>'+
-    (list.length?'<ul class="list">'+list.map(function(c){return chargeRow(c,false)}).join('')+'</ul>':'<p class="empty">Nenhum gasto neste cartão em '+esc(mLong(sel))+'.</p>')+'</section>';
-  return out;
-}
-
-/* ---------- render ---------- */
-function render(){
-  cache=null;
-  document.querySelectorAll('.tab').forEach(function(t){t.setAttribute('aria-current',t.dataset.tab===ui.tab?'page':'false')});
-  var v=$('#view');
-  v.innerHTML=ui.tab==='home'?homeHTML():ui.tab==='add'?addHTML():(ui.cardId?cardDetailHTML():cardsHTML());
-  if(ui.tab==='add')updateAddPreview();
-  if(ui.tab==='cards'&&ui.cardId){
-    var sc=$('#chart-scroll'),r=sc&&sc.querySelector('rect.bar-r.sel');
-    if(sc&&r){sc.scrollLeft=Math.max(0,r.getBBox().x-sc.clientWidth/2+30)}
-  }
-  setStatus(store.msg,store.err);
-}
-function go(tab){ui.tab=tab;ui.confirm=null;if(tab!=='cards'){ui.cardId=null;ui.cardForm=null}window.scrollTo(0,0);render()}
-
-/* ---------- ações ---------- */
-function armConfirm(id){
-  ui.confirm=id;render();
-  clearTimeout(armConfirm.t);armConfirm.t=setTimeout(function(){if(ui.confirm===id){ui.confirm=null;render()}},4000);
-}
-document.addEventListener('click',function(e){
-  var el=e.target.closest('[data-act]');if(!el)return;
-  var act=el.dataset.act,id=el.dataset.id;
-  switch(act){
-    case 'tab':go(el.dataset.tab);break;
-    case 'goto-add':go('add');break;
-    case 'home-prev':ui.homeMonth=addMonths(ui.homeMonth,-1);render();break;
-    case 'home-next':ui.homeMonth=addMonths(ui.homeMonth,1);render();break;
-    case 'home-today':ui.homeMonth=todayKey();render();break;
-    case 'cap-edit':ui.capEdit=true;render();var ci=$('#c-cap');if(ci)ci.focus();break;
-    case 'cap-cancel':ui.capEdit=false;render();break;
-    case 'clear-example':state=blankState();ui.capEdit=false;persist();render();toast('Pronto. Defina seu teto para começar.');break;
-    case 'del':
-      if(ui.confirm!==id){armConfirm(id);break}
-      state.purchases=state.purchases.filter(function(p){return p.id!==id});ui.confirm=null;persist();render();toast('Lançamento excluído');break;
-    case 'dlg-ok':closeDialog();break;
-    case 'dlg-undo':
-      state.purchases=state.purchases.filter(function(p){return p.id!==id});persist();closeDialog();render();toast('Lançamento desfeito');break;
-    case 'card-new':ui.cardForm='new';render();var kn=$('#k-name');if(kn)kn.focus();break;
-    case 'card-form-cancel':ui.cardForm=null;render();break;
-    case 'open-card':ui.cardId=id;ui.cardMonth=null;ui.cardForm=null;ui.confirm=null;window.scrollTo(0,0);render();break;
-    case 'back-cards':ui.cardId=null;ui.cardForm=null;ui.confirm=null;render();break;
-    case 'card-edit':ui.cardForm=id;render();break;
-    case 'card-del':
-      if(ui.confirm!=='card:'+id){armConfirm('card:'+id);break}
-      state.cards=state.cards.filter(function(c){return c.id!==id});
-      state.purchases=state.purchases.filter(function(p){return p.method!==id});
-      ui.confirm=null;ui.cardId=null;persist();render();toast('Cartão excluído');break;
-    case 'pick-month':ui.cardMonth=el.dataset.month;render();break;
-    case 'cm-prev':ui.cardMonth=addMonths(ui.cardMonth,-1);render();break;
-    case 'cm-next':ui.cardMonth=addMonths(ui.cardMonth,1);render();break;
-  }
-});
-document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'&&!$('#overlay').hidden){closeDialog();return}
-  if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.hit')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}))}
-});
-document.addEventListener('input',function(e){if(e.target.closest&&e.target.closest('#f-add')){readAdd();updateAddPreview()}});
-document.addEventListener('change',function(e){if(e.target.closest&&e.target.closest('#f-add')){readAdd();updateAddPreview()}});
-document.addEventListener('submit',function(e){
-  e.preventDefault();
-  var f=e.target;
-  if(f.id==='f-add'){submitAdd();return}
-  if(f.id==='f-cap'){
-    var v=parseMoney(f.elements.cap.value);
-    if(!(v>0)){$('#cap-err').textContent='Informe um valor maior que zero, por exemplo 3.500,00.';return}
-    state.cap=v;ui.capEdit=false;persist();render();toast('Teto salvo');return;
-  }
-  if(f.id==='f-card'){
-    var name=f.elements.name.value.trim(),lim=parseMoney(f.elements.limit.value),cl=f.elements.close.value.trim(),err=$('#k-err');
-    if(!name){err.textContent='Dê um nome ao cartão.';return}
-    if(!(lim>0)){err.textContent='Informe o limite do cartão, por exemplo 2.500,00.';return}
-    var day=null;
-    if(cl){day=parseInt(cl,10);if(!(day>=1&&day<=31)){err.textContent='O dia de fechamento vai de 1 a 31.';return}}
-    var color=(f.querySelector('input[name=color]:checked')||{}).value||COLORS[0],cid=f.dataset.id;
-    if(cid){var c=cardById(cid);if(c){c.name=name;c.limit=lim;c.closeDay=day;c.color=color}}
-    else{state.cards.push({id:uid(),name:name,limit:lim,closeDay:day,color:color})}
-    ui.cardForm=null;persist();render();toast('Cartão salvo');
-  }
-});
-
-render();
-initStore();
-</script>
+<script src="app.js"></script>
 <script>
 /* Aviso de atualização: compara a versão instalada com a última release do GitHub. */
 (function(){
