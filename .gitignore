@@ -16,3 +16,6 @@ _original/
 
 # chave de assinatura fixa (guardar em local seguro)
 _chave/
+
+# testes locais
+.playwright-mcp/
