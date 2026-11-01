@@ -1,0 +1,15 @@
+# dependências e projeto Android gerado pelo Capacitor (o CI recria)
+node_modules/
+android/
+
+# builds
+scripts/apk-local/build/
+*.apk
+*.idsig
+
+# chaves de assinatura (não versionar)
+*.keystore
+*.jks
+
+# HTML original exportado (a versão do app é www/index.html)
+_original/
