@@ -95,6 +95,55 @@ function todayKey(){return todayStr().slice(0,7)}
 function mLong(key){var p=key.split('-');return MES[+p[1]-1]+' de '+p[0]}
 function mShort(key){var p=key.split('-');return MES3[+p[1]-1]+'/'+p[0]}
 function dm(ds){return ds.slice(8,10)+'/'+ds.slice(5,7)}
+
+/* ---------- seletor de data próprio ----------
+   O <input type="date"> nativo abre um diálogo quebrado no WebView do Android
+   (tela branca / roleta minúscula). Este calendário é desenhado pelo app e
+   grava o valor AAAA-MM-DD num input oculto name="date". */
+var DIAS=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+var CAL_ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+function isoOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function dateLabel(v){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(v||''))return 'Escolher data';
+  var d=new Date(+v.slice(0,4),+v.slice(5,7)-1,+v.slice(8,10));
+  var y=new Date();y.setDate(y.getDate()-1);
+  var pre=v===todayStr()?'Hoje, ':v===isoOf(y)?'Ontem, ':DIAS[d.getDay()]+', ';
+  return pre+d.getDate()+' de '+MES[d.getMonth()]+' de '+d.getFullYear();
+}
+function dateFieldHTML(id,label,value){
+  return '<div class="field" data-date-field><label for="'+id+'">'+label+'</label>'+
+    '<input type="hidden" name="date" value="'+esc(value||'')+'">'+
+    '<button type="button" class="input datebtn" id="'+id+'" data-act="date-toggle" aria-expanded="false">'+CAL_ICON+'<span class="dv">'+esc(dateLabel(value))+'</span></button>'+
+    '<div class="cal" hidden></div></div>';
+}
+function calHTML(view,sel){
+  var y=+view.slice(0,4),m=+view.slice(5,7)-1,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),today=todayStr();
+  var h='<div class="cal-head"><button type="button" class="iconbtn" data-act="date-nav" data-d="-1" aria-label="Mês anterior">‹</button>'+
+    '<b>'+MES[m]+' '+y+'</b><button type="button" class="iconbtn" data-act="date-nav" data-d="1" aria-label="Próximo mês">›</button></div><div class="cal-grid">';
+  ['D','S','T','Q','Q','S','S'].forEach(function(w){h+='<span class="wd">'+w+'</span>'});
+  for(var i=0;i<first;i++)h+='<span></span>';
+  for(var d=1;d<=days;d++){
+    var v=view+'-'+pad(d);
+    h+='<button type="button" class="cal-day'+(v===sel?' sel':'')+(v===today?' today':'')+'" data-act="date-pick" data-v="'+v+'" aria-label="'+esc(dateLabel(v))+'">'+d+'</button>';
+  }
+  var yd=new Date();yd.setDate(yd.getDate()-1);
+  return h+'</div><div class="cal-quick"><button type="button" class="btn sm" data-act="date-pick" data-v="'+today+'">Hoje</button><button type="button" class="btn sm" data-act="date-pick" data-v="'+isoOf(yd)+'">Ontem</button></div>';
+}
+function dateFieldAct(act,el){
+  var f=el.closest('[data-date-field]');if(!f)return;
+  var hid=f.querySelector('input[name=date]'),cal=f.querySelector('.cal'),btn=f.querySelector('.datebtn');
+  if(act==='date-toggle'){
+    var open=cal.hidden;
+    if(open){f.dataset.view=(hid.value||todayStr()).slice(0,7);cal.innerHTML=calHTML(f.dataset.view,hid.value)}
+    cal.hidden=!open;btn.setAttribute('aria-expanded',String(open));
+  }else if(act==='date-nav'){
+    f.dataset.view=addMonths(f.dataset.view,+el.dataset.d);cal.innerHTML=calHTML(f.dataset.view,hid.value);
+  }else if(act==='date-pick'){
+    hid.value=el.dataset.v;f.querySelector('.dv').textContent=dateLabel(hid.value);
+    cal.hidden=true;btn.setAttribute('aria-expanded','false');btn.focus();
+    hid.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+}
 function plural(n,a,b){return n+' '+(n===1?a:b)}
 function isNative(){var C=window.Capacitor;return !!(C&&C.isNativePlatform&&C.isNativePlatform())}
 function plugin(name){return isNative()&&window.Capacitor.Plugins?window.Capacitor.Plugins[name]||null:null}
@@ -507,7 +556,7 @@ function addHTML(){
     '<p class="hint num" id="a-inst-note"></p></div>'+
     '<fieldset><div class="legend">Categoria</div>'+chipsHTML('cat',CATS,d.cat)+'</fieldset>'+
     '<fieldset><div class="legend">Era necessidade ou desejo?</div>'+chipsHTML('kind',[['need','Necessidade'],['want','Desejo']],d.kind)+'</fieldset>'+
-    '<div class="field"><label for="a-date">Data da compra</label><input class="input" type="date" id="a-date" name="date" value="'+esc(d.date)+'"></div>'+
+    dateFieldHTML('a-date','Data da compra',d.date)+
     '<div class="preview" id="a-prev" aria-live="polite"></div>'+
     '<div id="a-err" class="err" role="alert"></div>'+
     '<button class="btn primary block" type="submit">'+(editing?'Salvar alterações':'Adicionar lançamento')+'</button>'+
@@ -640,7 +689,7 @@ function incFormHTML(){
     '<div class="field"><label for="i-val">Valor recebido</label><input class="input num bigval" id="i-val" name="val" inputmode="decimal" placeholder="0,00" value="'+esc(item?money2input(item.total):'')+'" autocomplete="off"></div>'+
     '<div class="field"><label for="i-desc">De onde veio?</label><input class="input" id="i-desc" name="desc" maxlength="60" placeholder="Ex.: Salário, freela, venda" value="'+esc(item?item.desc:'')+'" autocomplete="off"></div>'+
     '<fieldset><div class="legend">Tipo</div>'+chipsHTML('cat',INCATS,item?item.cat:'Salário')+'</fieldset>'+
-    '<div class="field"><label for="i-date">'+(isRec?'Dia em que cai (use qualquer data com esse dia)':'Data')+'</label><input class="input" type="date" id="i-date" name="date" value="'+esc(date)+'"></div>'+
+    dateFieldHTML('i-date',isRec?'Dia em que cai (use qualquer data com esse dia)':'Data',date)+
     (item?'':'<label class="check"><input type="checkbox" name="rec"> Recebo esse valor todo mês</label>')+
     (isRec?'<p class="hint">Entrada fixa: a mudança vale para todos os meses.</p>':'')+
     '<div id="i-err" class="err" role="alert"></div>'+
@@ -857,6 +906,7 @@ function focusSoon(sel){setTimeout(function(){var el=$(sel);if(el){el.focus();el
 document.addEventListener('click',function(e){
   var el=e.target.closest('[data-act]');if(!el)return;
   var act=el.dataset.act,id=el.dataset.id;
+  if(act.indexOf('date-')===0){dateFieldAct(act,el);return}
   switch(act){
     case 'tab':go(el.dataset.tab);break;
     case 'goto-add':go('add');break;

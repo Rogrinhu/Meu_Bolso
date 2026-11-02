@@ -98,6 +98,21 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .swatch input:checked+span{border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--surface)}
 .swatch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 .err{color:var(--crit);font-size:13px;font-weight:500}
+/* seletor de data próprio (substitui o diálogo nativo do Android) */
+.datebtn{display:flex;align-items:center;gap:10px;text-align:left}
+.datebtn svg{color:var(--accent);flex:none}
+.datebtn .dv{display:inline-block}
+.datebtn .dv::first-letter{text-transform:uppercase}
+.cal{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-head b{font-family:var(--font-display);font-size:16px;text-transform:capitalize}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal-grid .wd{font-size:12px;font-weight:600;color:var(--muted);padding:4px 0}
+.cal-day{min-height:40px;border:0;border-radius:10px;background:none;font-variant-numeric:tabular-nums}
+.cal-day.today{box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent);font-weight:600}
+.cal-day.sel{background:var(--accent);color:var(--accent-ink);font-weight:700;box-shadow:none}
+.cal-day:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cal-quick{display:flex;gap:8px;margin-top:10px}
 
 /* navegação de mês */
 .monthnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
