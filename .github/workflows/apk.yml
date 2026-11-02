@@ -102,5 +102,11 @@ jobs:
           } > notas.md
           cat notas.md
 
-          gh release create "v$VERSION_NAME" MeuBolso.apk \
-            --target "$GITHUB_SHA" --title "$titulo" --notes-file notas.md --latest
+          # "Re-run" reaproveita o run_number: se a versão já existe, só troca o APK
+          if gh release view "v$VERSION_NAME" >/dev/null 2>&1; then
+            echo "A versão v$VERSION_NAME já existe (re-run): atualizando o APK."
+            gh release upload "v$VERSION_NAME" MeuBolso.apk --clobber
+          else
+            gh release create "v$VERSION_NAME" MeuBolso.apk \
+              --target "$GITHUB_SHA" --title "$titulo" --notes-file notas.md --latest
+          fi
